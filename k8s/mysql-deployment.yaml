@@ -12,31 +12,34 @@ spec:
     metadata:
       labels:
         app: mysql
+      annotations:
+        instrumentation.opentelemetry.io/inject-java: "false"
+        instrumentation.opentelemetry.io/inject-nodejs: "false"
+        instrumentation.opentelemetry.io/inject-python: "false"
+        instrumentation.opentelemetry.io/inject-dotnet: "false"
     spec:
       containers:
         - name: mysql
           image: 519372048065.dkr.ecr.us-east-1.amazonaws.com/tienda-db:latest
           ports:
             - containerPort: 3306
-
           env:
             - name: MYSQL_ROOT_PASSWORD
-              value: root
-            - name: MYSQL_DATABASE
-              value: inovatech
-
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: MYSQL_ROOT_PASSWORD
           resources:
             requests:
               cpu: "100m"
-              memory: "128Mi"
+              memory: "256Mi"
             limits:
               cpu: "500m"
               memory: "512Mi"
-
           volumeMounts:
             - name: data
               mountPath: /var/lib/mysql
-
       volumes:
         - name: data
           emptyDir: {}
+          
