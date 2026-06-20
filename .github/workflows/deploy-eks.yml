@@ -26,7 +26,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}
 
       # ---------- LOGIN ECR ----------
       - name: Login ECR
@@ -76,10 +76,10 @@ jobs:
             --region $AWS_REGION \
             --name ${{ secrets.EKS_CLUSTER_NAME }}
 
-      # ---------- DEPLOY ----------
+      # ---------- DEPLOY (FIX REAL) ----------
       - name: Deploy to EKS
         run: |
-          kubectl apply -f k8s/
+          kubectl apply -f k8s/ -n $EKS_NAMESPACE
 
           kubectl set image deployment/ventas ventas=$REGISTRY/$ECR_REPO_VENTAS:$IMAGE_TAG -n $EKS_NAMESPACE
           kubectl set image deployment/despachos despachos=$REGISTRY/$ECR_REPO_DESPACHOS:$IMAGE_TAG -n $EKS_NAMESPACE
