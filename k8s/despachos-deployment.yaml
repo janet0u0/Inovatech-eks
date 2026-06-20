@@ -1,36 +1,35 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: despachos
+  name: ventas
   namespace: inovatech
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: despachos
+      app: ventas
   template:
     metadata:
       labels:
-        app: despachos
+        app: ventas
+      annotations:
+        instrumentation.opentelemetry.io/inject-java: "false"
     spec:
       containers:
-        - name: despachos
-          image: 519372048065.dkr.ecr.us-east-1.amazonaws.com/tienda-despachos:latest
+        - name: ventas
+          image: 519372048065.dkr.ecr.us-east-1.amazonaws.com/tienda-ventas:latest
           ports:
-            - containerPort: 8081
-
+            - containerPort: 8080
           env:
-            - name: DB_ENDPOINT
-              value: "mysql"
-            - name: DB_PORT
-              value: "3306"
-            - name: DB_NAME
-              value: "inovatech"
-            - name: DB_USERNAME
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:mysql://mysql:3306/ventas_db"
+            - name: SPRING_DATASOURCE_USERNAME
               value: "root"
-            - name: DB_PASSWORD
-              value: "root"
-
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef
+                  name: mysql-secret
+                  key: MYSQL_ROOT_PASSWORD
           resources:
             requests:
               cpu: "100m"
@@ -38,17 +37,15 @@ spec:
             limits:
               cpu: "500m"
               memory: "512Mi"
-
           readinessProbe:
             httpGet:
               path: /actuator/health
-              port: 8081
-            initialDelaySeconds: 5
-            periodSeconds: 5
-
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /actuator/health
-              port: 8081
-            initialDelaySeconds: 10
-            periodSeconds: 10
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 15
