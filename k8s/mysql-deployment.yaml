@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: mysql
-          image: mysql:8.0
+          image: 519372048065.dkr.ecr.us-east-1.amazonaws.com/tienda-db:latest
           ports:
             - containerPort: 3306
 
@@ -40,4 +40,3 @@ spec:
       volumes:
         - name: data
           emptyDir: {}
-          
