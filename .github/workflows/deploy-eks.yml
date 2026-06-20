@@ -1,0 +1,112 @@
+name: CI/CD Inovatech EKS
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+env:
+  ECR_REPO_FRONTEND: inovatech-frontend
+  ECR_REPO_VENTAS: inovatech-ventas
+  ECR_REPO_DESPACHOS: inovatech-despachos
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      # ---------- AWS ----------
+      - name: Configurar credenciales AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+
+      # ---------- ECR LOGIN ----------
+      - name: Login a Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Definir tag de imagen
+        run: echo "IMAGE_TAG=${GITHUB_SHA::7}" >> $GITHUB_ENV
+
+      # ---------- FRONTEND ----------
+      - name: Build & push FRONTEND
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          cd front_despacho
+          docker build -t $ECR_REGISTRY/${ECR_REPO_FRONTEND}:${IMAGE_TAG} .
+          docker push $ECR_REGISTRY/${ECR_REPO_FRONTEND}:${IMAGE_TAG}
+
+      # ---------- VENTAS ----------
+      - name: Build & push VENTAS
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          cd back-Ventas_SpringBoot/Springboot-API-REST
+          docker build -t $ECR_REGISTRY/${ECR_REPO_VENTAS}:${IMAGE_TAG} .
+          docker push $ECR_REGISTRY/${ECR_REPO_VENTAS}:${IMAGE_TAG}
+
+      # ---------- DESPACHOS ----------
+      - name: Build & push DESPACHOS
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          cd back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
+          docker build -t $ECR_REGISTRY/${ECR_REPO_DESPACHOS}:${IMAGE_TAG} .
+          docker push $ECR_REGISTRY/${ECR_REPO_DESPACHOS}:${IMAGE_TAG}
+
+      # ---------- KUBECTL ----------
+      - name: Instalar kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: v1.29.0
+
+      - name: Configurar kubeconfig EKS
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          EKS_CLUSTER_NAME: ${{ secrets.EKS_CLUSTER_NAME }}
+        run: |
+          aws eks update-kubeconfig \
+            --region $AWS_REGION \
+            --name $EKS_CLUSTER_NAME
+
+      # ---------- DEPLOY ----------
+      - name: Deploy en EKS
+        env:
+          EKS_NAMESPACE: ${{ secrets.EKS_NAMESPACE }}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+
+          kubectl apply -f k8s/namespace.yaml
+
+          kubectl apply -f k8s/ventas-deployment.yaml -n $EKS_NAMESPACE
+          kubectl apply -f k8s/ventas-service.yaml -n $EKS_NAMESPACE
+
+          kubectl apply -f k8s/despachos-deployment.yaml -n $EKS_NAMESPACE
+          kubectl apply -f k8s/despachos-service.yaml -n $EKS_NAMESPACE
+
+          kubectl apply -f k8s/frontend-deployment.yaml -n $EKS_NAMESPACE
+          kubectl apply -f k8s/frontend-service.yaml -n $EKS_NAMESPACE
+
+          kubectl set image deployment/ventas ventas=$ECR_REGISTRY/${ECR_REPO_VENTAS}:${IMAGE_TAG} -n $EKS_NAMESPACE
+          kubectl set image deployment/despachos despachos=$ECR_REGISTRY/${ECR_REPO_DESPACHOS}:${IMAGE_TAG} -n $EKS_NAMESPACE
+          kubectl set image deployment/frontend frontend=$ECR_REGISTRY/${ECR_REPO_FRONTEND}:${IMAGE_TAG} -n $EKS_NAMESPACE
+
+          kubectl rollout status deployment/ventas -n $EKS_NAMESPACE
+          kubectl rollout status deployment/despachos -n $EKS_NAMESPACE
+          kubectl rollout status deployment/frontend -n $EKS_NAMESPACE
+
+      # ---------- VER ESTADO ----------
+      - name: Ver estado final
+        env:
+          EKS_NAMESPACE: ${{ secrets.EKS_NAMESPACE }}
+        run: |
+          kubectl get pods -n $EKS_NAMESPACE
+          kubectl get svc -n $EKS_NAMESPACE
