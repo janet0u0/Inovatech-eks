@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: ventas
-          image: 519372048065.dkr.ecr.us-east-1.amazonaws.com/tienda-ventas
+          image: 519372048065.dkr.ecr.us-east-1.amazonaws.com/tienda-ventas:latest
           ports:
             - containerPort: 8080
           env:

@@ -1,33 +1,33 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ventas
+  name: despachos
   namespace: inovatech
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: ventas
+      app: despachos
   template:
     metadata:
       labels:
-        app: ventas
+        app: despachos
       annotations:
         instrumentation.opentelemetry.io/inject-java: "false"
     spec:
       containers:
-        - name: ventas
-          image: 519372048065.dkr.ecr.us-east-1.amazonaws.com/tienda-ventas:latest
+        - name: despachos
+          image: 519372048065.dkr.ecr.us-east-1.amazonaws.com/tienda-despachos:latest
           ports:
-            - containerPort: 8080
+            - containerPort: 8081
           env:
             - name: SPRING_DATASOURCE_URL
-              value: "jdbc:mysql://mysql:3306/ventas_db"
+              value: "jdbc:mysql://mysql:3306/despachos_db"
             - name: SPRING_DATASOURCE_USERNAME
               value: "root"
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
-                secretKeyRef
+                secretKeyRef:
                   name: mysql-secret
                   key: MYSQL_ROOT_PASSWORD
           resources:
@@ -40,12 +40,12 @@ spec:
           readinessProbe:
             httpGet:
               path: /actuator/health
-              port: 8080
+              port: 8081
             initialDelaySeconds: 30
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /actuator/health
-              port: 8080
+              port: 8081
             initialDelaySeconds: 60
             periodSeconds: 15
