@@ -10,6 +10,7 @@ env:
   ECR_REPO_FRONTEND: tienda-frontend
   ECR_REPO_VENTAS: tienda-ventas
   ECR_REPO_DESPACHOS: tienda-despachos
+  EKS_NAMESPACE: inovatech
 
 jobs:
   build-and-deploy:
@@ -25,19 +26,17 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+          aws-region: ${{ secrets.AWS_REGION }}
 
       # ---------- LOGIN ECR ----------
       - name: Login ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      # 🔥 FIX IMPORTANTE: guardar registry
-      - name: Guardar registry ECR
-        run: echo "REGISTRY=${{ steps.login-ecr.outputs.registry }}" >> $GITHUB_ENV
-
-      - name: Set image tag
-        run: echo "IMAGE_TAG=${GITHUB_SHA::7}" >> $GITHUB_ENV
+      - name: Set variables
+        run: |
+          echo "REGISTRY=${{ steps.login-ecr.outputs.registry }}" >> $GITHUB_ENV
+          echo "IMAGE_TAG=${GITHUB_SHA::7}" >> $GITHUB_ENV
 
       # ---------- FRONTEND ----------
       - name: Build FRONTEND
@@ -83,12 +82,12 @@ jobs:
       # ---------- DEPLOY ----------
       - name: Deploy to EKS
         run: |
-          kubectl apply -f k8s/
+          kubectl apply -f k8s/ -n $EKS_NAMESPACE
 
-          kubectl set image deployment/ventas ventas=$REGISTRY/$ECR_REPO_VENTAS:$IMAGE_TAG
-          kubectl set image deployment/despachos despachos=$REGISTRY/$ECR_REPO_DESPACHOS:$IMAGE_TAG
-          kubectl set image deployment/frontend frontend=$REGISTRY/$ECR_REPO_FRONTEND:$IMAGE_TAG
+          kubectl set image deployment/ventas ventas=$REGISTRY/$ECR_REPO_VENTAS:$IMAGE_TAG -n $EKS_NAMESPACE
+          kubectl set image deployment/despachos despachos=$REGISTRY/$ECR_REPO_DESPACHOS:$IMAGE_TAG -n $EKS_NAMESPACE
+          kubectl set image deployment/frontend frontend=$REGISTRY/$ECR_REPO_FRONTEND:$IMAGE_TAG -n $EKS_NAMESPACE
 
-          kubectl rollout status deployment/ventas
-          kubectl rollout status deployment/despachos
-          kubectl rollout status deployment/frontend
+          kubectl rollout status deployment/ventas -n $EKS_NAMESPACE
+          kubectl rollout status deployment/despachos -n $EKS_NAMESPACE
+          kubectl rollout status deployment/frontend -n $EKS_NAMESPACE
