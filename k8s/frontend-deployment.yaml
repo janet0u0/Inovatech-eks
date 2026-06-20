@@ -12,13 +12,17 @@ spec:
     metadata:
       labels:
         app: frontend
+      annotations:
+        instrumentation.opentelemetry.io/inject-java: "false"
+        instrumentation.opentelemetry.io/inject-nodejs: "false"
+        instrumentation.opentelemetry.io/inject-python: "false"
+        instrumentation.opentelemetry.io/inject-dotnet: "false"
     spec:
       containers:
         - name: frontend
           image: 519372048065.dkr.ecr.us-east-1.amazonaws.com/tienda-frontend:latest
           ports:
             - containerPort: 80
-
           resources:
             requests:
               cpu: "50m"
@@ -26,14 +30,12 @@ spec:
             limits:
               cpu: "300m"
               memory: "256Mi"
-
           readinessProbe:
             httpGet:
               path: /
               port: 80
             initialDelaySeconds: 3
             periodSeconds: 5
-
           livenessProbe:
             httpGet:
               path: /
