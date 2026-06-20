@@ -10,6 +10,7 @@ env:
   ECR_REPO_FRONTEND: tienda-frontend
   ECR_REPO_VENTAS: tienda-ventas
   ECR_REPO_DESPACHOS: tienda-despachos
+  ECR_REPO_DB: tienda-db
   EKS_NAMESPACE: inovatech
 
 jobs:
@@ -37,6 +38,12 @@ jobs:
           echo "REGISTRY=${{ steps.login-ecr.outputs.registry }}" >> $GITHUB_ENV
           echo "IMAGE_TAG=${GITHUB_SHA::7}" >> $GITHUB_ENV
 
+      - name: Build DB
+        run: |
+          cd db
+          docker build -t $REGISTRY/$ECR_REPO_DB:$IMAGE_TAG .
+          docker build -t $REGISTRY/$ECR_REPO_DB:latest .
+
       - name: Build FRONTEND
         run: |
           cd front_despacho
@@ -54,6 +61,8 @@ jobs:
 
       - name: Push images
         run: |
+          docker push $REGISTRY/$ECR_REPO_DB:$IMAGE_TAG
+          docker push $REGISTRY/$ECR_REPO_DB:latest
           docker push $REGISTRY/$ECR_REPO_FRONTEND:$IMAGE_TAG
           docker push $REGISTRY/$ECR_REPO_VENTAS:$IMAGE_TAG
           docker push $REGISTRY/$ECR_REPO_DESPACHOS:$IMAGE_TAG
@@ -73,10 +82,12 @@ jobs:
         run: |
           kubectl apply -f k8s/ -n $EKS_NAMESPACE
 
+          kubectl set image deployment/mysql mysql=$REGISTRY/$ECR_REPO_DB:$IMAGE_TAG -n $EKS_NAMESPACE
           kubectl set image deployment/ventas ventas=$REGISTRY/$ECR_REPO_VENTAS:$IMAGE_TAG -n $EKS_NAMESPACE
           kubectl set image deployment/despachos despachos=$REGISTRY/$ECR_REPO_DESPACHOS:$IMAGE_TAG -n $EKS_NAMESPACE
           kubectl set image deployment/frontend frontend=$REGISTRY/$ECR_REPO_FRONTEND:$IMAGE_TAG -n $EKS_NAMESPACE
 
+          kubectl rollout status deployment/mysql -n $EKS_NAMESPACE
           kubectl rollout status deployment/ventas -n $EKS_NAMESPACE
           kubectl rollout status deployment/despachos -n $EKS_NAMESPACE
           kubectl rollout status deployment/frontend -n $EKS_NAMESPACE
