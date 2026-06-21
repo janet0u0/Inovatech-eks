@@ -7,7 +7,7 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  ECR_REPO_FRONTEND: tienda-frontend
+  ECR_REPO_FRONTEND: tienda-fronted
   ECR_REPO_VENTAS: tienda-ventas
   ECR_REPO_DESPACHOS: tienda-despachos
   ECR_REPO_DB: tienda-db
