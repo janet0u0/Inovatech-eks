@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: despachos
-          image: 349503729667.dkr.ecr.us-east-1.amazonaws.com/tienda-despachos:latest
+          image: 519372048065.dkr.ecr.us-east-1.amazonaws.com/tienda-despachos:latest
           ports:
             - containerPort: 8081
           env:
