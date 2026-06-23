@@ -98,10 +98,10 @@ jobs:
           kubectl set image deployment/despachos despachos=$REGISTRY/$ECR_REPO_DESPACHOS:$IMAGE_TAG -n $EKS_NAMESPACE
           kubectl set image deployment/frontend frontend=$REGISTRY/$ECR_REPO_FRONTEND:$IMAGE_TAG -n $EKS_NAMESPACE
 
-          kubectl rollout status deployment/mysql -n $EKS_NAMESPACE --timeout=3m
+          kubectl rollout status deployment/mysql -n $EKS_NAMESPACE --timeout=10m
           kubectl rollout status deployment/ventas -n $EKS_NAMESPACE --timeout=10m
           kubectl rollout status deployment/despachos -n $EKS_NAMESPACE --timeout=10m
-          kubectl rollout status deployment/frontend -n $EKS_NAMESPACE --timeout=3m
+          kubectl rollout status deployment/frontend -n $EKS_NAMESPACE --timeout=10m
 
       - name: Ver pods y servicios
         run: |
