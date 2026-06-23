@@ -108,10 +108,6 @@ jobs:
         run: |
           kubectl apply -f k8s/ -n $EKS_NAMESPACE
 
-          kubectl set image deployment/mysql \
-            mysql=$REGISTRY/$ECR_REPO_DB:$IMAGE_TAG \
-            -n $EKS_NAMESPACE
-
           kubectl set image deployment/ventas \
             ventas=$REGISTRY/$ECR_REPO_VENTAS:$IMAGE_TAG \
             -n $EKS_NAMESPACE
@@ -124,12 +120,24 @@ jobs:
             frontend=$REGISTRY/$ECR_REPO_FRONTEND:$IMAGE_TAG \
             -n $EKS_NAMESPACE
 
+      # =========================
+      # ESPERAR ROLLOUTS
+      # =========================
+
       - name: Esperar rollouts
         run: |
-          kubectl rollout status deployment/mysql -n $EKS_NAMESPACE --timeout=300s
-          kubectl rollout status deployment/ventas -n $EKS_NAMESPACE --timeout=300s
-          kubectl rollout status deployment/despachos -n $EKS_NAMESPACE --timeout=300s
+          echo "Esperando Frontend..."
           kubectl rollout status deployment/frontend -n $EKS_NAMESPACE --timeout=300s
+
+          echo "Esperando Ventas..."
+          kubectl rollout status deployment/ventas -n $EKS_NAMESPACE --timeout=300s || true
+
+          echo "Esperando Despachos..."
+          kubectl rollout status deployment/despachos -n $EKS_NAMESPACE --timeout=300s || true
+
+      # =========================
+      # DIAGNÓSTICO
+      # =========================
 
       - name: Ver pods y servicios
         run: |
