@@ -5,6 +5,7 @@ metadata:
   namespace: inovatech
 spec:
   replicas: 1
+  progressDeadlineSeconds: 600
   selector:
     matchLabels:
       app: mysql
@@ -42,4 +43,3 @@ spec:
       volumes:
         - name: data
           emptyDir: {}
-          
